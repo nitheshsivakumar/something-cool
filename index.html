@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>open this</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --gold: #d4a653;
+    --gold-light: #e8c87a;
+    --gold-dim: #8a6d3b;
+    --cream: #f0e6d3;
+    --cream-dim: #a89b8a;
+    --rose: #c4707a;
+    --rose-soft: #d4949c;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    overflow-x: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #sparkle-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #confetti-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .scene {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.75rem;
+    position: relative;
+    scroll-snap-align: start;
+    z-index: 1;
+  }
+
+  /* ── Scenes ── */
+  .scene-1 { background: radial-gradient(ellipse at 50% 80%, #151015 0%, var(--bg) 70%); }
+  .scene-2 { background: radial-gradient(ellipse at 50% 40%, #1a150f 0%, var(--bg) 80%); overflow: hidden; }
+  .scene-3 { background: radial-gradient(ellipse at 30% 60%, #12100d 0%, var(--bg) 70%); }
+  .scene-4 { background: radial-gradient(ellipse at 60% 50%, #14100f 0%, var(--bg) 70%); }
+  .scene-5 { background: radial-gradient(ellipse at 50% 50%, #151210 0%, var(--bg) 60%); }
+
+  /* ── Common text ── */
+  .line {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--cream);
+    text-align: center;
+    line-height: 1.8;
+    max-width: 320px;
+    opacity: 0;
+    transform: translateY(25px);
+    transition: all 0.9s ease-out;
+  }
+
+  .line.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .line.intro {
+    opacity: 0;
+    animation: fadeSlideUp 1s ease-out forwards;
+  }
+
+  .line .gold {
+    color: var(--gold-light);
+    font-weight: 700;
+    font-style: normal;
+  }
+
+  .line .rose {
+    color: var(--rose-soft);
+  }
+
+  .line-gap { margin-top: 1.5rem; }
+
+  /* ── Name ── */
+  .name {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 40%, var(--rose-soft) 80%, var(--gold-light) 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s ease-in-out infinite;
+    margin: 0.25rem 0 1rem;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
+
+  .name.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .name::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  }
+
+  .name .emoji {
+    -webkit-text-fill-color: initial;
+  }
+
+  /* ── Subtext ── */
+  .sub {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--cream);
+    text-align: center;
+    margin-top: 1.5rem;
+    letter-spacing: 0.03em;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.8s ease-out;
+  }
+
+  .sub.visible {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+
+  /* ── Sign off ── */
+  .signoff {
+    margin-top: 2.5rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream);
+    opacity: 0;
+    transition: all 0.8s ease-out 0.5s;
+  }
+
+  .signoff.visible { opacity: 1; }
+
+  /* ── Scroll hint ── */
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    opacity: 0;
+    animation: fadeIn 1s ease-out 3.5s forwards, gentleBounce 2s ease-in-out 3.5s infinite;
+  }
+
+  .scroll-hint span {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-right: 1.5px solid var(--gold-dim);
+    border-bottom: 1.5px solid var(--gold-dim);
+    transform: rotate(45deg);
+  }
+
+  /* ── Divider ── */
+  .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+    margin: 2rem auto;
+    opacity: 0;
+    transition: opacity 0.6s ease-out;
+  }
+
+  .dot.visible { opacity: 1; }
+
+  /* ── Keyframes ── */
+  @keyframes floatIn {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes gentleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  @keyframes gentleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 380px) {
+    .name { font-size: 3.2rem; }
+    .line { font-size: 1.3rem; }
+  }
+
+  @media (min-width: 768px) {
+    .name { font-size: 5.5rem; }
+    .line { font-size: 1.8rem; max-width: 450px; }
+  }
+
+  /* ── Emoji float ── */
+  .emoji-float {
+    position: absolute;
+    bottom: 3rem;
+    font-size: 1.5rem;
+    opacity: 0;
+    transition: all 0.8s ease-out 1s;
+  }
+
+  .emoji-float.visible {
+    opacity: 1;
+    animation: gentleFloat 3s ease-in-out infinite;
+  }
+
+  /* ── Roses row ── */
+  .roses {
+    font-size: 1.8rem;
+    letter-spacing: 0.3rem;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.8s ease-out;
+    margin-top: 0.5rem;
+  }
+
+  .roses.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Noise overlay ── */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="sparkle-canvas"></canvas>
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Screen 1: The Opening -->
+<section class="scene scene-1">
+  <p class="line intro" style="animation-delay: 0.5s;">
+    So there's this girl I know,
+  </p>
+  <p class="line intro" style="animation-delay: 2s;">
+    ridiculously pretty,<br>
+    <span class="gold">annoyingly kind,</span>
+  </p>
+  <p class="line intro" style="animation-delay: 4s;">
+    and it's her birthday today. 🌹
+  </p>
+  <div class="scroll-hint"><span></span></div>
+</section>
+
+<!-- Screen 2: The Buildup -->
+<section class="scene scene-2">
+  <p class="line" data-anim>
+    So obviously I had to<br>
+    do <span class="rose">something</span> about it.
+  </p>
+</section>
+
+<!-- Screen 3: The Wish -->
+<section class="scene scene-2" id="scene-wish">
+  <p class="line" data-anim style="font-size: 2.2rem; font-weight: 700;">Happy Birthday</p>
+  <div class="name" data-anim data-delay="500">Mommy <span class="emoji">🎂🌹</span></div>
+</section>
+
+<!-- Screen 4: The Compliments -->
+<section class="scene scene-4">
+  <p class="line" data-anim>
+    You're genuinely one of the<br>
+    <span class="gold">most beautiful people</span><br>
+    I've ever come across.
+  </p>
+  <div class="dot" data-anim data-delay="200"></div>
+  <p class="line" data-anim data-delay="400">
+    And I don't just mean your face,<br>
+    which is unfairly pretty btw.
+  </p>
+  <div class="dot" data-anim data-delay="600"></div>
+  <p class="line" data-anim data-delay="800">
+    I mean <span class="rose">you.</span> 🌹<br>
+    The way you care about people.<br>
+    The kind of human you are.
+  </p>
+</section>
+
+<!-- Screen 5: The Closer -->
+<section class="scene scene-5" id="scene-close">
+  <p class="line" data-anim>
+    Go have the most incredible year,<br>
+    Divya Sharma.
+  </p>
+  <p class="line line-gap" data-anim data-delay="500">
+    <span class="gold">You deserve every bit of it.</span> 🌹
+  </p>
+  <div class="signoff" data-anim data-delay="1000" style="align-self: center; margin-left: 3rem;">- Your fav Son</div>
+</section>
+
+<script>
+  // ── Sparkle particles ──
+  const sparkleCanvas = document.getElementById('sparkle-canvas');
+  const sCtx = sparkleCanvas.getContext('2d');
+  let sparkles = [];
+
+  function resizeCanvas(canvas) {
+    canvas.width = window.innerWidth * devicePixelRatio;
+    canvas.height = window.innerHeight * devicePixelRatio;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+  }
+
+  resizeCanvas(sparkleCanvas);
+  window.addEventListener('resize', () => resizeCanvas(sparkleCanvas));
+
+  for (let i = 0; i < 40; i++) {
+    sparkles.push({
+      x: Math.random() * sparkleCanvas.width,
+      y: Math.random() * sparkleCanvas.height,
+      r: Math.random() * 1.5 + 0.5,
+      alpha: Math.random(),
+      dAlpha: (Math.random() - 0.5) * 0.02,
+      drift: (Math.random() - 0.5) * 0.3,
+    });
+  }
+
+  function drawSparkles() {
+    sCtx.clearRect(0, 0, sparkleCanvas.width, sparkleCanvas.height);
+    sparkles.forEach(s => {
+      s.alpha += s.dAlpha;
+      if (s.alpha <= 0 || s.alpha >= 1) s.dAlpha *= -1;
+      s.alpha = Math.max(0, Math.min(1, s.alpha));
+      s.x += s.drift;
+      s.y -= 0.2;
+      if (s.y < -10) { s.y = sparkleCanvas.height + 10; s.x = Math.random() * sparkleCanvas.width; }
+      if (s.x < -10) s.x = sparkleCanvas.width + 10;
+      if (s.x > sparkleCanvas.width + 10) s.x = -10;
+      sCtx.beginPath();
+      sCtx.arc(s.x, s.y, s.r * devicePixelRatio, 0, Math.PI * 2);
+      const colors = ['rgba(212, 166, 83,', 'rgba(196, 112, 122,'];
+      sCtx.fillStyle = `${colors[Math.floor(s.r * 10) % 2]} ${s.alpha * 0.5})`;
+      sCtx.fill();
+    });
+    requestAnimationFrame(drawSparkles);
+  }
+  drawSparkles();
+
+  // ── Confetti ──
+  const confettiCanvas = document.getElementById('confetti-canvas');
+  const cCtx = confettiCanvas.getContext('2d');
+  let confettiPieces = [];
+  let confettiFired = false;
+
+  resizeCanvas(confettiCanvas);
+  window.addEventListener('resize', () => resizeCanvas(confettiCanvas));
+
+  const petalColors = ['#c4404a', '#d4606a', '#e07080', '#c4707a', '#d4949c', '#b83040', '#e8a0a8'];
+
+  function fireConfetti() {
+    if (confettiFired) return;
+    confettiFired = true;
+    const W = confettiCanvas.width;
+    const H = confettiCanvas.height;
+    for (let i = 0; i < 180; i++) {
+      confettiPieces.push({
+        x: W / 2 + (Math.random() - 0.5) * W * 0.6,
+        y: H * 0.3 + (Math.random() - 0.5) * H * 0.2,
+        vx: (Math.random() - 0.5) * 10,
+        vy: -(Math.random() * 12 + 3),
+        size: Math.random() * 6 + 4,
+        color: petalColors[Math.floor(Math.random() * petalColors.length)],
+        rot: Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.15,
+        gravity: 0.12 + Math.random() * 0.06,
+        sway: (Math.random() - 0.5) * 0.3,
+        alpha: 1,
+        decay: 0.002 + Math.random() * 0.003,
+      });
+    }
+  }
+
+  function drawConfetti() {
+    cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    confettiPieces = confettiPieces.filter(p => p.alpha > 0.01);
+    confettiPieces.forEach(p => {
+      p.x += p.vx + Math.sin(p.rot * 2) * p.sway;
+      p.vy += p.gravity;
+      p.y += p.vy;
+      p.vx *= 0.995;
+      p.rot += p.rotV;
+      p.alpha -= p.decay;
+
+      cCtx.save();
+      cCtx.translate(p.x, p.y);
+      cCtx.rotate(p.rot);
+      cCtx.globalAlpha = Math.max(0, p.alpha);
+      cCtx.fillStyle = p.color;
+
+      // Draw petal shape
+      cCtx.beginPath();
+      const s = p.size * devicePixelRatio;
+      cCtx.moveTo(0, -s);
+      cCtx.bezierCurveTo(s * 0.8, -s * 0.6, s * 0.8, s * 0.3, 0, s);
+      cCtx.bezierCurveTo(-s * 0.8, s * 0.3, -s * 0.8, -s * 0.6, 0, -s);
+      cCtx.fill();
+
+      cCtx.restore();
+    });
+    requestAnimationFrame(drawConfetti);
+  }
+  drawConfetti();
+
+  // ── Scroll-triggered animations ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const delay = parseInt(el.dataset.delay || '0', 10);
+        setTimeout(() => {
+          el.classList.add('visible');
+          if (el.classList.contains('name')) {
+            setTimeout(fireConfetti, 300);
+          }
+        }, delay);
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  document.querySelectorAll('[data-anim]').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
